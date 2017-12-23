@@ -1,26 +1,4 @@
-##############################################################
-#
-# GUniFrac2: Generalized UniFrac distances for comparing microbial
-#						communities. (Modified version)
-# Chong Wu (wuxx0845@umn.edu)
-#
-# The original version is contributed by
-# Jun Chen (chenjun@mail.med.upenn.edu)
-# Jun 12, 2015
-#
-###############################################################
-
-rdirichlet<-function(n,alpha)
-## generate n random deviates from the Dirichlet function with shape
-## parameters alpha
-{
-    l<-length(alpha);
-    x<-matrix(rgamma(l*n,alpha),ncol=l,byrow=TRUE);
-    sm<-x%*%rep(1,l);
-    x/as.vector(sm);
-}
-
-GUniFrac_cum <- function (otu.tab, tree) {
+NGUniFrac_cum <- function (otu.tab, tree) {
 	# Calculate Generalized UniFrac distances. Unweighted and
 	# Variance-adjusted UniFrac distances will also be returned.
 	#
@@ -38,8 +16,15 @@ GUniFrac_cum <- function (otu.tab, tree) {
 
 	# Convert into proportions
 	otu.tab <- as.matrix(otu.tab)
-	row.sum <- rowSums(otu.tab)
-	otu.tab <- otu.tab / row.sum
+	#row.sum <- rowSums(otu.tab)
+	#otu.tab <- otu.tab / row.sum
+
+	####ADD@2017.12.23
+	library(metagenomeSeq)
+	otu.tab <- cumNormMat(t(otu.tab), p = cumNormStatFast(t(otu.tab)), sl = 1000)
+	otu.tab <- t(otu.tab)
+	####
+
 	n <- nrow(otu.tab)
 
 	# Construct the returning array
@@ -90,30 +75,6 @@ GUniFrac_cum <- function (otu.tab, tree) {
 	return(out)
 }
 
-
-GUniFrac <-function (otu.tab, tree, alpha= c(0,0.5,1)) {
-    alpha = matrix(alpha,1,length(alpha))
-    alpha2 =matrix(c(0,0.5,1),1,3)
-
-    GuniF.cum = GUniFrac_cum(otu.tab,tree)
-    cum = GuniF.cum$cum
-    br.len = GuniF.cum$br.len
-    br.len = as.matrix(br.len)
-
-    if (identical(alpha,alpha2)) # if true, use a faster version
-    {
-        GUniF = GUniFracCpp(cum,br.len)
-        d0 = GUniF$d0
-        dw <- GUniF$d1  # Weighted UniFrac
-        d5 <- GUniF$d5
-
-        output = list(d0 = d0,dw=dw, d5=d5)
-    } else {
-        GUniF = GUniFracCpp2(cum,br.len, alpha)
-        output = list(GUniF = GUniF, alpha = alpha)
-    }
-    output
-}
 
 
 
